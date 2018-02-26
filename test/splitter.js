@@ -4,7 +4,7 @@ const expectedExceptionPromise = require("./expected_exception_testRPC_and_geth.
 contract('Splitter', function(accounts) {
     var instance;
     beforeEach(function() {
-        return Splitter.new(accounts[1], accounts[2]).then(function(contract) {
+        return Splitter.new().then(function(contract) {
             instance = contract;
         });
     });
@@ -18,29 +18,25 @@ contract('Splitter', function(accounts) {
     });
 
     it("should split evenly", function() {
-        return instance.split({
+        return instance.split.sendTransaction(accounts[1], accounts[2],{
             from: accounts[0],
-            value: 1e18
+            value: web3.toWei(1)
         }).then(function() {
-            return instance.getAvailableBalance.call({
-                from: accounts[1]
-            });
+            return instance.balances.call(accounts[1]);
         }).then(function(balance) {
-            assert.equal(balance.valueOf(), 5e17, "should have 5e17 balance");
+            assert.equal(balance.valueOf(), web3.toWei(0.5), "should have 0.5 eth balance");
         });
     });
 
     it("should withdraw", function() {
-        return instance.split.sendTransaction({
+        return instance.split.sendTransaction(accounts[1], accounts[2],{
             from: accounts[0],
-            value: 1e18
+            value: web3.toWei(1)
         }).then(function() {
             return instance.withdraw.sendTransaction({
                 from: accounts[1]
             }).then(function() {
-                return instance.getAvailableBalance.call({
-                    from: accounts[1]
-                });
+                return instance.balances.call(accounts[1]);
             }).then(function(balance) {
                 assert.equal(balance.valueOf(), 0, "should have 0 balance");
             });
@@ -49,9 +45,9 @@ contract('Splitter', function(accounts) {
 
 
     it("should not withdraw to creator", function() {
-        return instance.split.sendTransaction({
+        return instance.split.sendTransaction(accounts[1], accounts[2],{
             from: accounts[0],
-            value: 1e18
+            value: web3.toWei(1)
         }).then(function() {
             return expectedExceptionPromise(function() {
                     return instance.withdraw.sendTransaction({
@@ -59,20 +55,20 @@ contract('Splitter', function(accounts) {
                     });
                 })
                 .then(function() {
-                    return instance.getAvailableBalance.call({
+                    return instance.balances.call(accounts[1],{
                         from: accounts[1]
                     });
                 }).then(function(balance) {
-                    assert.equal(balance.valueOf(), 5e17, "should have 5e17 balance");
+                    assert.equal(balance.valueOf(), web3.toWei(0.5), "should have 0.5 eth balance");
                 });
         });
 
     });
 
     it("should have 0 balance after everyone withdrawed", function() {
-        return instance.split({
+        return instance.split.sendTransaction(accounts[1], accounts[2],{
             from: accounts[0],
-            value: 1e18
+            value: web3.toWei(1)
         }).then(function() {
             return instance.withdraw.sendTransaction({
                 from: accounts[1]
